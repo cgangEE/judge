@@ -55,8 +55,13 @@ template <class T> void _checkmin(T &t, T x){if (t == -1 || x < t) t = x;}
 int i,j,k,m,n,l;
 MYSQL *conn;
 char s[S+10], t[S+10];
+char judgeHome[100], proHome[100];
 
 bool init(){
+	if (NULL==getcwd(judgeHome, 100)){
+		puts("GET Judge Home Failed!"); return false;
+	}
+
 	conn = mysql_init(NULL);
 	if (!conn){
 		puts("FT!"); 
@@ -123,7 +128,7 @@ int pid=6;
 int lang=7;
 
 char names[][30]={"Main.c", "Main.cpp", "Main.java"};
-char comps[][30]={"gcc Main.c", "g++ Main.cpp", "javac Main.java"};
+char comps[][30]={"gcc Main.c -o Main", "g++ Main.cpp -o Main", "javac Main.java"};
 char fName[30];
 FILE *file;
 
@@ -143,12 +148,15 @@ bool comp(MYSQL_ROW row){
 
 void runApp(int id, int lang, int time, int memory){
 	cout<<id<<' '<<lang<<' '<<time<<' '<<memory<<endl;
-	//freopen("data.in", "r", stdin);
-	//freopen("user.out", "w", stdout);
+	freopen("data.in", "r", stdin);
+	freopen("user.out", "w", stdout);
 
-	execl("/bin/ls", "", (char*)NULL);
-	perror("execl ");
+	struct rlimit LIM;
+	LIM.rlim_cur = time;
+	LIM.rlim_max = LIM.rlim_cur;
+	setrlimit(RLIMIT_CPU, &LIM);
 
+	execl("./Main", "", (char*)NULL);
 	exit(0);
 }
 
@@ -166,7 +174,8 @@ void run(MYSQL_ROW row){
 }
 
 void indir(int pid){
-	
+	sprintf(proHome, "%s/%d", judgeHome, pid);
+	chdir(proHome);
 }
 
 void gao(){
