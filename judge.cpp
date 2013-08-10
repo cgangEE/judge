@@ -146,8 +146,7 @@ bool comp(MYSQL_ROW row){
 	return false;
 }
 
-void runApp(int id, int lang, int time, int memory){
-	cout<<id<<' '<<lang<<' '<<time<<' '<<memory<<endl;
+void run(int id, int lang, int time, int memory){
 	freopen("data.in", "r", stdin);
 	freopen("user.out", "w", stdout);
 
@@ -156,20 +155,37 @@ void runApp(int id, int lang, int time, int memory){
 	LIM.rlim_max = LIM.rlim_cur;
 	setrlimit(RLIMIT_CPU, &LIM);
 
-	execl("./Main", "", (char*)NULL);
+	LIM.rlim_cur = memroy * 1024 * 3 / 2;
+	LIM.rlim_max = memory * 1024 * 2;
+	if (lang<=1) setrlimit(RLIMIT_AS, &LIM);
+
+	if (lang<=1) execl("./Main", "", (char*)NULL);
+	else execl("java Main", "", (char*)NULL);
+
 	exit(0);
 }
 
-void run(MYSQL_ROW row){
+void judge(pid_t pidApp){
+	int status, sig, exitcode;
+	struct user_regs_struct reg;
+	struct rusage ruse;
+
+	while (1){
+		wait4(pidApp, &status, 0, &ruse);
+	}
+}
+
+void gao(MYSQL_ROW row){
 	pid_t pidApp = fork();
 	if (pidApp == 0){
 		sprintf(s, "SELECT * FROM problem WHERE pid = %s ", row[pid]);
 		mysql_query(conn, s);
 		MYSQL_RES * result = mysql_store_result(conn);
 		MYSQL_ROW row2 = mysql_fetch_row(result);
-		runApp(g(row[id]), g(row[lang]), g(row2[tlimit]), g(row2[mlimit]));
+		run(g(row[id]), g(row[lang]), g(row2[tlimit]), g(row2[mlimit]));
 	}
 	else{
+		judge(pidApp);
 	}
 }
 
@@ -186,7 +202,8 @@ void gao(){
 		indir(g(row[pid]));
 		save(row);
 		if (!comp(row)) continue;
-		run(row);
+		gao(row);
+
 	}
 }
 
