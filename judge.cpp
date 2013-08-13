@@ -1,3 +1,25 @@
+//	0 id
+//	1 pid
+//	2 title
+//	3 tlimit
+//	4 mlimit
+//	5 desp
+//	6 input
+//	7 output
+//	8 sinput
+//	9 soutput
+//	10 source
+//	11 date
+
+//	0 id
+//	1 code
+//	2 date
+//	3 uid
+//	4 status
+//	5 info
+//	6 pid
+//	7 lang
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -19,6 +41,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/wait.h>
+#include <sys/user.h>
 
 using namespace std;
 typedef vector<int> vi;
@@ -48,7 +71,6 @@ template <class T> void _checkmin(T &t, T x){if (t == -1 || x < t) t = x;}
 #define pwd "Alical"
 #define dbase "fzroj"
 
-#define CE 1
 
 #define S 1000
 
@@ -96,30 +118,10 @@ int g(char *s){
 	rep(i, strlen(s)) ret=ret*10+s[i]-'0';
 	return ret;
 }
-//	0 id
-//	1 pid
-//	2 title
-//	3 tlimit
-//	4 mlimit
-//	5 desp
-//	6 input
-//	7 output
-//	8 sinput
-//	9 soutput
-//	10 source
-//	11 date
 
 int tlimit=3;
 int mlimit=4;
 
-//	0 id
-//	1 code
-//	2 date
-//	3 uid
-//	4 status
-//	5 info
-//	6 pid
-//	7 lang
 
 int id=0;
 int code=1;
@@ -139,10 +141,20 @@ void save(MYSQL_ROW row){
 	fclose(file);
 }
 
+#define PD 0
+#define CE 1
+#define TLE 2
+#define AC 3
+#define WA 4
+
+void update_sql(int ACflg, MYSQL_ROW row){
+	sprintf(s, "UPDATE code SET status = '%d', date ='%s' WHERE id='%s'", ACflg, row[date], row[id]);
+	mysql_query(conn, s);
+}
+
 bool comp(MYSQL_ROW row){
 	if (system(comps[g(row[lang])])==0) return true;
-	sprintf(s, "UPDATE code SET status = '%d', date ='%s' WHERE id='%s'", CE, row[date], row[id]);
-	mysql_query(conn, s);
+	update_sql(CE, row);
 	return false;
 }
 
@@ -155,24 +167,42 @@ void run(int id, int lang, int time, int memory){
 	LIM.rlim_max = LIM.rlim_cur;
 	setrlimit(RLIMIT_CPU, &LIM);
 
-	LIM.rlim_cur = memroy * 1024 * 3 / 2;
+	LIM.rlim_cur = memory * 1024 * 3 / 2;
 	LIM.rlim_max = memory * 1024 * 2;
 	if (lang<=1) setrlimit(RLIMIT_AS, &LIM);
 
 	if (lang<=1) execl("./Main", "", (char*)NULL);
 	else execl("java Main", "", (char*)NULL);
+	cout<<"exec fuck program"<<endl;
 
 	exit(0);
 }
 
-void judge(pid_t pidApp){
-	int status, sig, exitcode;
+int judge(pid_t pidApp){
+	int status, sig, exitcode, ACflg=AC;
 	struct user_regs_struct reg;
 	struct rusage ruse;
 
-	while (1){
+	while (1)
+	{
 		wait4(pidApp, &status, 0, &ruse);
+
+		if (WIFEXITED(status)) break;
+
+		exitcode = WEXITSTATUS(status);
+
+		if (exitcode == SIGXCPU){
+			ACflg = TLE;
+			break;
+		}
+
+		if (WIFSIGNALED(status)){
+			sig = WTERMSIG(status);
+			if (sig==SIGXCPU || sig==SIGKILL) ACflg=TLE;
+			break;
+		}
 	}
+	return ACflg;
 }
 
 void gao(MYSQL_ROW row){
@@ -185,7 +215,10 @@ void gao(MYSQL_ROW row){
 		run(g(row[id]), g(row[lang]), g(row2[tlimit]), g(row2[mlimit]));
 	}
 	else{
-		judge(pidApp);
+		int ACflg = judge(pidApp);
+		if (ACflg==AC) 
+			ACflg = judge_solution();
+		update_sql(ACflg, row);
 	}
 }
 
@@ -203,7 +236,6 @@ void gao(){
 		save(row);
 		if (!comp(row)) continue;
 		gao(row);
-
 	}
 }
 
