@@ -1,6 +1,7 @@
 #include <cstdio>
 int main(){
-int i=-1000000000;
-while (1) printf("%d\n", i++);
+int a,b;
+scanf("%d%d", &a, &b);
+printf("%d\n", a+b);
 return 0;
 }

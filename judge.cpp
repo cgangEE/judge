@@ -146,6 +146,8 @@ void save(MYSQL_ROW row){
 #define TLE 2
 #define AC 3
 #define WA 4
+#define RE 5
+#define PE 6
 
 void update_sql(int ACflg, MYSQL_ROW row){
 	sprintf(s, "UPDATE code SET status = '%d', date ='%s' WHERE id='%s'", ACflg, row[date], row[id]);
@@ -205,6 +207,37 @@ int judge(pid_t pidApp){
 	return ACflg;
 }
 
+int judge_solution(){
+	int ret = AC;
+	FILE *f1, *f2;
+	f1 = fopen("data.out", "r");
+	f2 = fopen("user.out", "r");
+	if (!f1 || !f2) return RE;
+	for(;;){
+		char c1=fgetc(f1), c2=fgetc(f2);
+		while ((isspace(c1) || isspace(c2))){
+			if (c1 != c2){
+				if ((c1=='\r' && c2=='\n')) c1=fgetc(f1);
+				else if ((c1=='\n' && c2=='\r')) c2=fgetc(f2);
+				else if (c1==EOF){
+					do c2=fgetc(f2) ;
+					while (isspace(c2));
+					break;
+				}
+				else if (c2==EOF){
+					do c1=fgetc(f1); while (isspace(c1));
+					break;
+				}
+				else return PE;
+			}
+			if (isspace(c1)) c1 = fgetc(f1);
+			if (isspace(c2)) c2 = fgetc(f2);
+		}
+		if (c1==EOF && c2==EOF) return AC;
+		if (c1 != c2) return WA;
+	}
+}
+
 void gao(MYSQL_ROW row){
 	pid_t pidApp = fork();
 	if (pidApp == 0){
@@ -245,7 +278,7 @@ void done(){
 
 int main(){
 	if (init()){
-		repf(i, 1, 3){
+		for(;;){
 			gao();
 			sleep(1);
 		}
