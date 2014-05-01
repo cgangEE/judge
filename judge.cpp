@@ -119,15 +119,10 @@ int g(char *s){
 	return ret;
 }
 
-int tlimit=3;
-int mlimit=4;
+int ptime=2, pmem=3;
 
 
-int id=0;
-int code=1;
-int date=2;
-int pid=6;
-int lang=7;
+int cid=0, pid=1, uid=2, ctext=3, clang=4, cstatus=5, cctime=6, cmem=7, cdate=8;
 
 char names[][30]={"Main.c", "Main.cpp", "Main.java"};
 char comps[][30]={"gcc Main.c -o Main", "g++ Main.cpp -o Main", "javac Main.java"};
@@ -135,9 +130,9 @@ char fName[30];
 FILE *file;
 
 void save(MYSQL_ROW row){
-	memcpy(fName, names[row[lang][0]-'0'], 30);
+	memcpy(fName, names[row[clang][0]-'0'], 30);
 	file = fopen(fName, "w");
-	fputs(row[code], file);
+	fputs(row[ctext], file);
 	fclose(file);
 }
 
@@ -150,12 +145,12 @@ void save(MYSQL_ROW row){
 #define PE 6
 
 void update_sql(int ACflg, MYSQL_ROW row){
-	sprintf(s, "UPDATE code SET status = '%d', date ='%s' WHERE id='%s'", ACflg, row[date], row[id]);
+	sprintf(s, "UPDATE code SET cstatus = '%d' WHERE cid='%s'", ACflg, row[cid]);
 	mysql_query(conn, s);
 }
 
 bool comp(MYSQL_ROW row){
-	if (system(comps[g(row[lang])])==0) return true;
+	if (system(comps[g(row[clang])])==0) return true;
 	update_sql(CE, row);
 	return false;
 }
@@ -169,8 +164,8 @@ void run(int id, int lang, int time, int memory){
 	LIM.rlim_max = LIM.rlim_cur;
 	setrlimit(RLIMIT_CPU, &LIM);
 
-	LIM.rlim_cur = memory * 1024 * 3 / 2;
-	LIM.rlim_max = memory * 1024 * 2;
+	LIM.rlim_cur = memory * 1024 * 1024 * 3 / 2;
+	LIM.rlim_max = memory * 1024 * 1024 * 2;
 	if (lang<=1) setrlimit(RLIMIT_AS, &LIM);
 
 	if (lang<=1) execl("./Main", "", (char*)NULL);
@@ -245,7 +240,7 @@ void gao(MYSQL_ROW row){
 		mysql_query(conn, s);
 		MYSQL_RES * result = mysql_store_result(conn);
 		MYSQL_ROW row2 = mysql_fetch_row(result);
-		run(g(row[id]), g(row[lang]), g(row2[tlimit]), g(row2[mlimit]));
+		run(g(row[cid]), g(row[clang]), g(row2[ptime]), g(row2[pmem]));
 	}
 	else{
 		int ACflg = judge(pidApp);
@@ -261,7 +256,7 @@ void indir(int pid){
 }
 
 void gao(){
-	mysql_query(conn, "SELECT * FROM code WHERE status = 0 ORDER BY date");
+	mysql_query(conn, "SELECT * FROM code WHERE cstatus = 0 ORDER BY cdate");
 	MYSQL_RES * result = mysql_store_result(conn);
 
 	while (MYSQL_ROW row = mysql_fetch_row(result)){
