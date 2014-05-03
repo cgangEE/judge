@@ -1,3 +1,4 @@
+ 
 #include <iostream>
 #include <cstring>
 #define MAX_SIZE 51
