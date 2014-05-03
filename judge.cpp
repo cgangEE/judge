@@ -1,4 +1,4 @@
-//	0 id
+//	0 id"", 
 //	1 pid
 //	2 title
 //	3 tlimit
@@ -102,14 +102,14 @@ bool init(){
 }
 
 void display(){
-		sprintf(s, "SELECT * FROM problem"); 
-		mysql_query(conn, s);
-		MYSQL_RES * result = mysql_store_result(conn);
+	sprintf(s, "SELECT * FROM problem"); 
+	mysql_query(conn, s);
+	MYSQL_RES * result = mysql_store_result(conn);
 
-		int i=0;
-		while(MYSQL_FIELD *fd = mysql_fetch_field(result)){
+	int i=0;
+	while(MYSQL_FIELD *fd = mysql_fetch_field(result)){
 		cout<<i<<' '<<fd->name<<endl;
-			i++;
+		i++;
 	}
 }
 
@@ -160,7 +160,10 @@ void run(int id, int lang, int time, int memory){
 	freopen("user.out", "w", stdout);
 
 	struct rlimit LIM;
-	LIM.rlim_cur = time;
+
+	if (lang==2) LIM.rlim_cur = time * 3;
+	else LIM.rlim_cur = time;
+
 	LIM.rlim_max = LIM.rlim_cur;
 	setrlimit(RLIMIT_CPU, &LIM);
 
@@ -169,8 +172,7 @@ void run(int id, int lang, int time, int memory){
 	if (lang<=1) setrlimit(RLIMIT_AS, &LIM);
 
 	if (lang<=1) execl("./Main", "", (char*)NULL);
-	else execl("java Main", "", (char*)NULL);
-	cout<<"exec fuck program"<<endl;
+	else execlp("java", "java", "Main", (char*)NULL);
 
 	exit(0);
 }
@@ -184,7 +186,6 @@ int judge(pid_t pidApp){
 	{
 		wait4(pidApp, &status, 0, &ruse);
 
-		if (WIFEXITED(status)) break;
 
 		exitcode = WEXITSTATUS(status);
 
@@ -193,9 +194,28 @@ int judge(pid_t pidApp){
 			break;
 		}
 
+		if (exitcode!=0){
+			ACflg = RE;
+			break;
+		}
+
+		if (WIFEXITED(status)) break;
+
 		if (WIFSIGNALED(status)){
 			sig = WTERMSIG(status);
-			if (sig==SIGXCPU || sig==SIGKILL) ACflg=TLE;
+			switch (sig){
+
+				case SIGCHLD:
+				case SIGALRM:
+					alarm(0);
+				case SIGKILL:
+				case SIGXCPU:
+					ACflg = TLE;
+					break;
+				default:
+					ACflg = RE;
+			}
+			cout<<(strsignal(sig))<<endl;
 			break;
 		}
 	}

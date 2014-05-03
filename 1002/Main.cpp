@@ -1,35 +1,34 @@
 #include<stdio.h>
-#define N 1005
-int a[N];
-int main()
+#include<stdlib.h>
+#include<string.h>
+
+int main ()
 {
-    int t,k,n,i,j,s,max,u;
-    scanf("%d",&t);
-    while(t--)
+    int K,N,L,i,j,k,n,m,max,maxpos;
+    int a[1000],b[6];
+    scanf("%d",&K);
+    for(n=0;n<K;n++)
     {
-      scanf("%d%d",&k,&n);
-      for(i=1;i<=n;i++)
-        scanf("%d",&a[i]);
-        max=-1;
-      for(i=1;i<=n+1-k;i++)
-      {
-         s=0;
-        for(j=i;j<=i+k-1;j++)
-        {
-            s+=a[j];
-        }
-        if(s>max)
-          {
-              max=s;
-              u=i;
-          }
-      }
-      if(max<0)
-         printf("0
-");
-    else
-       printf("%d
-",u);
+	 max=0;/*重置*/ 
+	 maxpos=0;/*重置maxpos的值为零，为下一组数据做准备*/ 
+	 scanf("%d%d",&L,&N);
+	 for(i=0;i<N;i++)
+	   scanf("%d",&a[i]);
+	 for(j=0;j<N-L+1;j++)
+	   {
+	    m=0;/*重置*/
+		for(k=0;k<L;k++)
+		 m=a[j+k]+m;
+	    if(m>max)
+	  	 {max=m;
+	  	  maxpos=j+1; 
+		 }
+	   }
+	 b[n]=maxpos;
     }
-    return 0;
+	for(k=0;k<K;k++)
+	 printf("%d
+",b[k]);
+	system("pause");
+	return 0;  
 }
