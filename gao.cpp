@@ -23,19 +23,22 @@ using namespace std;
 #define sz(a) ((int)(a).size())
 
 void run(){
+	struct rlimit LIM;
+
+	LIM.rlim_cur = 3600;
+	LIM.rlim_max = LIM.rlim_cur;
+	setrlimit(RLIMIT_CPU, &LIM);
+
 	execl("./judge", "",  (char*)0);
 	exit(0);
 }
 
 void gao(){
-	pid_t pid = fork();
-	if (pid==0) run();
-
-	int status;
-	struct user_regs_struct reg;
-	struct rusage ruse;
-	wait4(pid, &status, 0, &ruse);
-	gao();
+	rep(i, 1000000){
+		pid_t pid = fork();
+		if (pid==0) run();
+		sleep(3600);
+	}
 }
 
 int main(){
